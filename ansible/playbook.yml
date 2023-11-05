@@ -1,13 +1,27 @@
- - hosts: localhost
-   gather_facts: no
-   become: n
-   
-   vars:
+- hosts: localhost
+  gather_facts: no
+  become: n
+  
+  vars_files:
+          - /etc/ansible/vault.yml
+  vars:
           image_name: "domashno2"
-          image_tag: "v01"
+          image_tag: "v03"
           ports: "5002"
-
-   tasks:
+          repo_name: "https://github.com/MihailDDimovski/Domashno2"
+          branch_name: "main"
+          docker_repo: "mihaildanailovdimovski/domashno2"
+          code_directory: "/projects/domashno2_v03"
+  tasks:
+          - name: Get the code from GitHub
+            git:
+               repo: "{{ repo_name }}"
+               version: "{{ branch_name }}"
+               dest: "{{ code_directory }}"   
+          - name: log into docker hub registry
+            docker_login:
+               username: "{{ myu }}"
+               password: "{{ myp }}"
           - name: build container image and push to DockerHub
             docker_image:
                name: "{{ image_name }}"
@@ -16,14 +30,13 @@
                  path: /projects/domashno2/app
                source: build
                state: present
-               repository: "mihaildanailovdimovski/domashno2:{{ image_tag }}"
+               repository: "{{ docker_repo }}:{{ image_tag }}"
                push: true
-
           - name: ensure a container is running
             docker_container:
                name: "{{ image_name }}"
                state: started
-               image: "mihaildanailovdimovski/domashno2:{{ image_tag }}"
+               image: "{{ docker_repo }}:{{ image_tag }}"
                pull: true
                ports:
                  - "{{ ports }}"
